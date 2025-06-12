@@ -6,6 +6,7 @@ const finalScore = document.getElementById('finalScore');
 
 const bugEmoji = '🐛';
 const splatEmoji = '💥';
+const bombEmoji = '💣'; // Add bomb emoji
 const numHoles = 12;
 let score = 0;
 let timeLeft = 30;
@@ -21,7 +22,7 @@ for (let i = 0; i < numHoles; i++) {
     grid.appendChild(hole);
 }
 
-function spawnBug() {
+function spawnBugOrBomb() {
     if (gameOver) return;
 
     const holes = document.querySelectorAll('.hole');
@@ -32,31 +33,51 @@ function spawnBug() {
     const randomHole = availableHoles[Math.floor(Math.random() * availableHoles.length)];
 
     randomHole.classList.add('active');
-    randomHole.innerHTML = `<span class="bug">${bugEmoji}</span>`;
 
-    const bug = randomHole.querySelector('.bug');
+    // Randomly decide to spawn a bug or a bomb (e.g., 70% bug, 30% bomb)
+    const isBomb = Math.random() < 0.3;
+    if (isBomb) {
+        randomHole.innerHTML = `<span class="bomb">${bombEmoji}</span>`;
+        const bomb = randomHole.querySelector('.bomb');
+        bomb.addEventListener('click', () => {
+            if (gameOver || !randomHole.classList.contains('active')) return;
 
-    bug.addEventListener('click', () => {
-    if (gameOver || !randomHole.classList.contains('active')) return;
+            score = Math.max(0, score - 15); // Remove points, don't go below 0
+            scoreDisplay.textContent = `Score: ${score}`;
 
-    score += 10;
-    scoreDisplay.textContent = `Score: ${score}`;
+            bomb.textContent = splatEmoji;
+            bomb.classList.add('squashed');
 
-    bug.textContent = splatEmoji;
-    bug.classList.add('squashed');
+            setTimeout(() => {
+                randomHole.innerHTML = '';
+                randomHole.classList.remove('active');
+            }, 500);
+        });
+    } else {
+        randomHole.innerHTML = `<span class="bug">${bugEmoji}</span>`;
+        const bug = randomHole.querySelector('.bug');
+        bug.addEventListener('click', () => {
+            if (gameOver || !randomHole.classList.contains('active')) return;
 
-    setTimeout(() => {
-        randomHole.innerHTML = '';
-        randomHole.classList.remove('active');
-    }, 500);
-    });
+            score += 10;
+            scoreDisplay.textContent = `Score: ${score}`;
 
-    // Remove the bug after 1.5 seconds if not squashed
-    const timerId = setTimeout(() => {
-    if (randomHole.classList.contains('active')) {
-        randomHole.innerHTML = '';
-        randomHole.classList.remove('active');
+            bug.textContent = splatEmoji;
+            bug.classList.add('squashed');
+
+            setTimeout(() => {
+                randomHole.innerHTML = '';
+                randomHole.classList.remove('active');
+            }, 500);
+        });
     }
+
+    // Remove the bug or bomb after 1.5 seconds if not clicked
+    const timerId = setTimeout(() => {
+        if (randomHole.classList.contains('active')) {
+            randomHole.innerHTML = '';
+            randomHole.classList.remove('active');
+        }
     }, 1500);
 
     bugTimers.push(timerId);
@@ -64,7 +85,7 @@ function spawnBug() {
 
 function startGame() {
     gameInterval = setInterval(() => {
-    spawnBug();
+        spawnBugOrBomb();
     }, 800);
 
     const countdown = setInterval(() => {
